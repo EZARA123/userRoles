@@ -21,3 +21,43 @@ async function verifyUser(username, password, done){
         id: user.id,
     });
 }
+
+passport.use(
+    new Strategy(
+        {
+            usernameField: 'email',
+            passwordField: 'password'
+        },
+        verifyUser
+    )
+);
+
+
+passport.serializeUser(function(user,done){
+    process.nextTick(function () {
+        done(null, {id: user.id});
+    });
+});
+
+
+passport.deserializeUser(async  function (user,done){
+    const userModel = await User.findByPk(user.id, {
+        include: [
+            {
+                model: Role,
+                as: 'role',
+                include: [
+                    {
+                        model: Permission,
+                        as: 'permissions'
+                    }
+                ],
+            }
+        ]
+    });
+    process.nextTick(function (){
+        return done(null, userModel);
+    });
+});
+
+module.exports.passport = passport;
